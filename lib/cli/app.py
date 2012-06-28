@@ -223,7 +223,7 @@ class Application(object):
         else:
             return returned
 
-    def run(self):
+    def run(self, argv=None, exit_after=None):
         """Run the application, returning its return value.
 
         This method first calls :meth:`pre_run` and then calls :attr:`main`,
@@ -232,6 +232,11 @@ class Application(object):
         then passed to :meth:`post_run` which may modify it (or terminate the
         application entirely).
         """
+        if argv:
+            self.argv = argv
+        if exit_after is not None:
+            self.exit_after_main = exit_after
+
         self.pre_run()
 
         args = (self,)
@@ -416,7 +421,7 @@ class CommandLineMixin(object):
         :attr:`exit_after_main` is not True, raise Abort instead.
         """
         try:
-            ns = self.argparser.parse_args()
+            ns = self.argparser.parse_args(self.argv[1:])
         except SystemExit, e:
             if self.exit_after_main:
                 raise
