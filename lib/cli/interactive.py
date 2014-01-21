@@ -29,11 +29,12 @@ log = logging.getLogger(__name__)
 
 from cli.app import CommandLineApp, CommandLineMixin, Application, Abort
 from cli.log import LoggingMixin
+from cli.complete import CommandCompleter
 
-__all__ = ['InteractiveApp', 'InteractiveMixin', 'CommandCompleter']
+__all__ = ['InteractiveApp', 'InteractiveMixin', 'InteractiveAppCompleter']
 
 
-class CommandCompleter(object):
+class InteractiveAppCompleter(CommandCompleter):
     def __init__(self, commands, logger=None):
         self.commands = commands
         self.log = logger or logging.getLogger(self.__class__.__name__)
@@ -41,87 +42,24 @@ class CommandCompleter(object):
 
     def complete(self, first, current, previous, words, index):
         self.log.debug('complete: first=%s, current=%s, previous=%s, words=%s, index=%s',
-            first, current, previous, words, index) 
+            first, current, previous, words, index)
         current_candidates = []
-        if not words:
-            # empty command line, choose from all possible commands
-            current_candidates = sorted(self.commands.keys())
+        if index == 0:
+            candidates = sorted(self.commands.keys())
+            if current:
+                # match options with portion of input being completed
+                current_candidates = [w for w in candidates
+                                            if w.startswith(current)]
+            else:
+                # matching empty string so use all candidates
+                current_candidates = candidates
         else:
-            try:
-                if index == 0:
-                    # first word
-                    candidates = sorted(self.commands.keys())
-                else:
-                    # later word
-                    command_name = words[0]
-                    if current:
-                        existing_options = set(words[1:-1])
-                    else:
-                        existing_options = set(words[1:])
-                    candidates = []
-                    for action in self.commands[command_name].actions.values():
-                        if existing_options.isdisjoint(set(action.option_strings)):
-                            candidates.extend(action.option_strings)
-
-                if current:
-                    # match options with portion of input being completed
-                    current_candidates = [w for w in candidates
-                                                if w.startswith(current)]
-                else:
-                    # matching empty string so use all candidates
-                    current_candidates = candidates
-
-                self.log.debug('candidates=%s', current_candidates)
-                
-            except (KeyError, IndexError) as err:
-                self.log.debug('completion error: %s', err)
-                current_candidates = []
+            # delegate to commands own completer
+            command = self.commands[first]
+            if not hasattr(command, 'completer'):
+                command.completer = CommandCompleter(command.actions)
+            current_candidates = command.completer.complete(first, current, previous, words, index)
         return current_candidates
-
-    # TODO: also implement bash/zsh/shell completion
-    #   @see http://www.gnu.org/software/bash/manual/bashref.html#Programmable-Completion
-    #   @see /home/sar/vcs/plugit for inspiration
-    def complete_bash(self):
-        first = sys.argv[1]
-        current = sys.argv[2]
-        previous = sys.argv[3]
-        line = os.environ['COMP_LINE']
-        index = os.environ['COMP_POINT']
-        words = line.split()
-        candidates = self.complete(first, current, previous, words, index)
-        self.log.debug("complete_bash: %s", candidates)
-        print('\n'.join(candidates))
-
-    def complete_readline(self, text, state):
-        self.log.debug('complete_readline: text:%s, state:%s', text, state)
-        response = None
-        if state == 0:
-            # This is the first time we are called for this text, so build a match list.
-            import readline 
-            line = readline.get_line_buffer()
-            words = line.split()
-            index = readline.get_begidx()
-            current = text
-            first = ''
-            if len(words) > 0:
-                first = words[0]
-            try:
-                if len(current) == 0:
-                    previous = words[-1]
-                else:
-                    previous = words[-2]
-            except IndexError:
-                previous = ''
-            self.current_candidates = self.complete(first, current, previous, words, index)
-        try:
-            response = self.current_candidates[state]
-            if len(self.current_candidates) == 1:
-                # Add space if there is only one candidate
-                response = '{} '.format(response)
-        except IndexError:
-            response = None
-        self.log.debug('complete_readline(%s, %s) => %s', repr(text), state, response)
-        return response
 
 
 class InteractiveMixin(object):
@@ -185,7 +123,7 @@ class InteractiveMixin(object):
         try:
             import readline
             self.old_completer = readline.get_completer()
-            self.completer = CommandCompleter(self.commands, logger=self.log)
+            self.completer = InteractiveAppCompleter(self.commands, logger=self.log)
             readline.set_completer(self.completer.complete_readline)
             orig_completer_delims = readline.get_completer_delims()
             # remove - (dash) from completer delims as we also want to complete command line arguments

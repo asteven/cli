@@ -81,6 +81,9 @@ class CommandCompleter(object):
             candidates = []
         return candidates
 
+    # TODO: also implement bash/zsh/shell completion
+    #   @see http://www.gnu.org/software/bash/manual/bashref.html#Programmable-Completion
+    #   @see /home/sar/vcs/plugit for inspiration
     def complete_bash(self):
         first = sys.argv[1]
         current = sys.argv[2]
