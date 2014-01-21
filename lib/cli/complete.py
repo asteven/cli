@@ -34,6 +34,8 @@ __all__ = ['CompletionMixin', 'CommandCompleter']
 
 
 class CommandCompleter(object):
+    """Readline and bash command completion.
+    """
     def __init__(self, actions, exclude=None):
         self.actions = actions
         self.current_candidates = []

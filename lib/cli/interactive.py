@@ -35,6 +35,10 @@ __all__ = ['InteractiveApp', 'InteractiveMixin', 'InteractiveAppCompleter']
 
 
 class InteractiveAppCompleter(CommandCompleter):
+    """A special form of command completer that completes on command names
+    and then delegates the completion of command arguments to a command
+    specific completer.
+    """
     def __init__(self, commands, logger=None):
         self.commands = commands
         self.log = logger or logging.getLogger(self.__class__.__name__)
