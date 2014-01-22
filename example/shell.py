@@ -20,6 +20,11 @@ shell.add_command(ls, name='notls')
 from lsof import lsof
 shell.add_command(lsof)
 
+@shell.command(name='gugus')
+def foo(app):
+    app.stdout.write('running {0}, parent: {1}'.format(app.name, app.parent))
+foo.add_param("--long", help="use a long listing format", default=False, action="store_true")
+foo.add_param("-a", "--all", help="do not ignore entries starting with .", default=False, action="store_true")
 
 
 shell.run()
