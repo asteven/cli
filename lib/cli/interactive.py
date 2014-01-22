@@ -96,8 +96,15 @@ class InteractiveMixin(object):
         if self.readline_completekey:
             self.configure_readline_completer()
 
+    def command(self, main=None, name=None, **kwargs):
+        app = CommandLineApp(main=main, **kwargs)
+        app.parent = self
+        self.add_command(app, name=name)
+        return app
+
     def add_command(self, command, name=None):
         command_name = name or command.name
+        command.parent = self
         self.commands[command_name] = command
 
     def configure_readline_history(self):
