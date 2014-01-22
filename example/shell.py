@@ -15,9 +15,11 @@ shell.add_command(sh)
 
 from ls import ls
 shell.add_command(ls)
+shell.add_command(ls, name='notls')
 
 from lsof import lsof
 shell.add_command(lsof)
+
 
 
 shell.run()
