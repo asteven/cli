@@ -2,11 +2,11 @@
 :mod:`cli.interactive` -- interactive applications
 --------------------------------------------------
 
-Run a command as an interactive shell. Dispatches user inputs to other 
+Run a command as an interactive shell. Dispatches user inputs to other
 registered applications.
 """
 
-__license__ = """Copyright (c) 2012 Steven Armstrong <steven-cli@armstrong.cc>
+__license__ = """Copyright (c) 2012-2014 Steven Armstrong <steven-cli@armstrong.cc>
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -86,8 +86,11 @@ class InteractiveMixin(object):
             self.prompt = '%s> ' % self.name
         self.add_param('-i', '--interactive', default=False, action='store_true',
                 help='run the application interactively as a shell')
-        self.add_param('remainder', nargs=argparse.REMAINDER,
-                help='the remaining arguments are treated as input to the shell')
+        # TODO: cleaner way to do this without using subparsers
+        self.argparser._positionals.title = 'available commands'
+        self.add_param('command', nargs=argparse.REMAINDER,
+                metavar=', '.join(self.commands.keys()),
+                help='for command specific help run \'<command> -h\'')
 
     def pre_run(self):
         self.log.debug('pre_run')
@@ -97,13 +100,18 @@ class InteractiveMixin(object):
             self.configure_readline_completer()
 
     def command(self, main=None, name=None, **kwargs):
+        #app = CommandLineApp(main=main, name=name, **kwargs)
         app = CommandLineApp(main=main, **kwargs)
         app.parent = self
+        #self.add_command(app)
         self.add_command(app, name=name)
         return app
 
     def add_command(self, command, name=None):
-        command_name = name or command.name
+        #command_name = name or command.name
+        if name is not None:
+            command._name = name
+        command_name = command.name
         command.parent = self
         self.commands[command_name] = command
 
@@ -156,12 +164,12 @@ class InteractiveMixin(object):
     def input_loop(self):
         if self.stdin.isatty() and not self.params.interactive:
             # remaining command line args if any
-            if self.params.remainder:
-                if self.params.remainder[0] == '--':
-                    remainder = self.params.remainder[1:]
+            if self.params.command:
+                if self.params.command[0] == '--':
+                    command = self.params.command[1:]
                 else:
-                    remainder = self.params.remainder
-                line = ' '.join(remainder)
+                    command = self.params.command
+                line = ' '.join(command)
                 yield line
             return
         try:
@@ -221,11 +229,13 @@ class InteractiveApp(
         self.log.debug('InteractiveApp.setup')
 
     def pre_run(self):
+        self.main = self._main
+        self.setup()
         self.log.debug('InteractiveApp.pre_run')
         Application.pre_run(self)
         CommandLineMixin.pre_run(self)
         LoggingMixin.pre_run(self)
         InteractiveMixin.pre_run(self)
 
-    def main(self):
+    def _main(self):
         self.interact()
