@@ -7,20 +7,20 @@ import cli.app
 import cli.interactive
 
 
-
 shell = cli.interactive.InteractiveApp(name='foobar')
 
 from sh import sh
 shell.add_command(sh)
 
 from ls import ls
-shell.add_command(ls)
+#shell.add_command(ls)
 shell.add_command(ls, name='notls')
 
 from lsof import lsof
 shell.add_command(lsof)
 
 @shell.command(name='gugus')
+#@shell.command
 def foo(app):
     app.stdout.write('running {0}, parent: {1}'.format(app.name, app.parent))
 foo.add_param("--long", help="use a long listing format", default=False, action="store_true")
