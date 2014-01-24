@@ -86,7 +86,7 @@ class InteractiveMixin(object):
             self.prompt = '%s> ' % self.name
         self.add_param('-i', '--interactive', default=False, action='store_true',
                 help='run the application interactively as a shell')
-        # TODO: cleaner way to do this without using subparsers
+        # TODO: is there cleaner way to do this? but without using subparsers
         self.argparser._positionals.title = 'available commands'
         self.add_param('command', nargs=argparse.REMAINDER,
                 metavar=', '.join(self.commands.keys()),
