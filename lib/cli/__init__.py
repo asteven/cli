@@ -41,6 +41,7 @@ __requires__ = []
 # The following is modeled after the ISC license.
 __copyright__ = """\
 2009-2012 Will Maier <wcmaier@m.aier.us>
+2012-2014 Steven Armstrong <steven-cli@armstrong.cc>
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -60,3 +61,48 @@ __todo__ = """\
     * more tests
     * add Windows registry/OS X plist support (sekhmet)
 """
+
+import cli.app
+default_app_class = cli.app.CommandLineApp
+
+
+def command(main=None, name=None, app_class=cli.default_app_class, **kwargs):
+    """Decorator for easily creating applications.
+
+    Usage:
+
+    @command
+    def some_function(app):
+        app.stdout.write('running {0}, {1} with: {2}\n'.format(app, app.name, app.params))
+
+    @command(name='other_name', app_class=cli.log.LoggingApp)
+    def some_function(app):
+        app.stdout.write('running {0}, {1} with: {2}\n'.format(app, app.name, app.params))
+
+    """
+    app = app_class(main=main, name=name, **kwargs)
+    return app
+
+def param(*args, **kwargs):
+    """Decorator for easy definition of parameters.
+
+    Usage:
+
+    @param("--long", help="use a long listing format", default=False, action="store_true")
+    @param("-a", "--all", help="do not ignore entries starting with .", default=False, action="store_true")
+    def only_param(app):
+        app.stdout.write('running {0}, {1} with: {2}\n'.format(app, app.name, app.params))
+
+
+    @param("--long", help="use a long listing format", default=False, action="store_true")
+    @param("-a", "--all", help="do not ignore entries starting with .", default=False, action="store_true")
+    @command(app_class=cli.log.LoggingApp)
+    def command_logging_with_params(app):
+        app.stdout.write('running {0}, {1} with: {2}\n'.format(app, app.name, app.params))
+    """
+    def wrapper(app):
+        if not isinstance(app, cli.app.Application):
+            app = cli.app.CommandLineApp(app)
+        app.add_param(*args, **kwargs)
+        return app
+    return wrapper
