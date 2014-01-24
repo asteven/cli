@@ -100,15 +100,12 @@ class InteractiveMixin(object):
             self.configure_readline_completer()
 
     def command(self, main=None, name=None, **kwargs):
-        #app = CommandLineApp(main=main, name=name, **kwargs)
-        app = CommandLineApp(main=main, **kwargs)
+        app = CommandLineApp(main=main, name=name, **kwargs)
         app.parent = self
-        #self.add_command(app)
-        self.add_command(app, name=name)
+        self.add_command(app)
         return app
 
     def add_command(self, command, name=None):
-        #command_name = name or command.name
         if name is not None:
             command._name = name
         command_name = command.name
